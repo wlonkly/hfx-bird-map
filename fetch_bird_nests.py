@@ -6,6 +6,7 @@ import datetime
 import json
 import sys
 import urllib.request
+from zoneinfo import ZoneInfo
 
 GBFS_BASE_URL = "https://mds.bird.co/gbfs/v2/public/halifax/gbfs.json"
 
@@ -204,6 +205,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
+<meta name="description" content="Interactive map of Bird scooter and bike parking nests in Halifax and Dartmouth, NS. See availability by location." />
+<meta name="keywords" content="Halifax, Dartmouth, Bird scooter, bike share, parking nest, scooter map, bike map, Nova Scotia" />
+<meta property="og:title" content="Halifax Bird Parking Nest Map" />
+<meta property="og:description" content="Interactive map of Bird scooter and bike parking nests in Halifax and Dartmouth, NS." />
+<meta property="og:image" content="images/screenshot.png" />
+<meta property="og:url" content="https://www.lafferty.ca/hfxbirdmap/" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Halifax Bird Parking Nest Map" />
+<meta name="twitter:description" content="Interactive map of Bird scooter and bike parking nests in Halifax and Dartmouth, NS." />
+<meta name="twitter:image" content="images/screenshot.png" />
 <title>Halifax Bird Parking Nests</title>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
@@ -378,7 +390,7 @@ def main():
         print(f"Merged {before - len(stations)} duplicate-address stations.")
 
     geojson = stations_to_geojson(stations)
-    generated_at = datetime.datetime.now().strftime("%B %d, %Y at %I:%M %p %Z")
+    generated_at = datetime.datetime.now(datetime.timezone.utc).astimezone(ZoneInfo("America/Halifax")).strftime("%B %d, %Y at %I:%M %p %Z")
     html = generate_html(geojson, generated_at)
 
     with open(args.output, "w", encoding="utf-8") as f:

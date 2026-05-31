@@ -2,6 +2,8 @@
 
 An interactive map of Bird scooter/bike parking nest locations in Halifax/Dartmouth, NS.
 
+<img src="images/screenshot.png" alt="Halifax Bird Parking Nest Map" width="50%" />
+
 ## Quick Start
 
 ```bash
