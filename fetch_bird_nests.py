@@ -209,7 +209,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta name="keywords" content="Halifax, Dartmouth, Bird scooter, bike share, parking nest, scooter map, bike map, Nova Scotia" />
 <meta property="og:title" content="Halifax Bird Parking Nest Map" />
 <meta property="og:description" content="Interactive map of Bird scooter and bike parking nests in Halifax and Dartmouth, NS." />
-<meta property="og:image" content="images/screenshot.png" />
+<meta property="og:image" content="https://www.lafferty.ca/hfxbirdmap/images/screenshot.png" />
 <meta property="og:url" content="https://www.lafferty.ca/hfxbirdmap/" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
