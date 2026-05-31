@@ -1,2 +1,6 @@
 bird_nests.html
 tmp/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
