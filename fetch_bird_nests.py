@@ -4,7 +4,9 @@
 import argparse
 import datetime
 import json
+import os
 import sys
+import tempfile
 import urllib.request
 from zoneinfo import ZoneInfo
 
@@ -23,10 +25,10 @@ def fetch_json(url: str) -> dict:
 
 def get_feed_url(feeds: list, name: str) -> str | None:
     """Extract a specific feed URL from the GBFS feed discovery list."""
-    for feed in feeds:
-        if feed.get("name") == name:
-            return feed.get("url")
-    return None
+    return next(
+        (feed.get("url") for feed in feeds if feed.get("name") == name),
+        None,
+    )
 
 
 def build_vehicle_type_map(vt_data: dict) -> dict[str, str]:
@@ -39,10 +41,13 @@ def build_vehicle_type_map(vt_data: dict) -> dict[str, str]:
 
 def merge_station_data(station_info: list, station_status: list, vehicle_type_map: dict[str, str] | None = None) -> list:
     """Merge station info with status by station_id, including per-type vehicle counts."""
-    status_by_id = {s["station_id"]: s for s in station_status}
+    status_by_id = {s["station_id"]: s for s in station_status if s.get("station_id")}
     merged = []
     for info in station_info:
-        sid = info["station_id"]
+        sid = info.get("station_id")
+        if sid is None:
+            print(f"WARNING: Skipping station record without station_id: {info.get('name', 'unknown')!r}", file=sys.stderr)
+            continue
         status = status_by_id.get(sid, {})
         raw_types = status.get("vehicle_types_available") or []
         if vehicle_type_map:
@@ -52,6 +57,7 @@ def merge_station_data(station_info: list, station_status: list, vehicle_type_ma
             ]
         else:
             vehicle_types_available = raw_types
+        # num_bikes_available is GBFS terminology; it counts all vehicle types (scooters, bikes, etc.)
         merged.append({
             **info,
             "num_bikes_available": status.get("num_bikes_available", 0),
@@ -63,8 +69,7 @@ def merge_station_data(station_info: list, station_status: list, vehicle_type_ma
 
 def merge_duplicate_stations(stations: list) -> list:
     """Merge stations with the same address into a single entry, summing counts."""
-    from collections import OrderedDict
-    merged = OrderedDict()
+    merged = {}
     for s in stations:
         address = s.get("address") or s.get("name", "")
         if address in merged:
@@ -104,16 +109,18 @@ def snap_vehicles_to_stations(stations: list, free_vehicles: list, vehicle_type_
     for v in free_vehicles:
         if v.get("is_reserved") or v.get("is_disabled"):
             continue
-        vlat, vlon = v["lat"], v["lon"]
+        vlat = v.get("lat")
+        vlon = v.get("lon")
+        if vlat is None or vlon is None:
+            print(f"WARNING: Skipping vehicle without location: {v.get('bike_id', 'unknown')!r}", file=sys.stderr)
+            continue
         vt_id = v.get("vehicle_type_id")
         vt_name = vehicle_type_map.get(vt_id, "unknown") if vt_id else "unknown"
 
         nearest = None
         nearest_dist = float("inf")
         for s in stations:
-            dlat = s["lat"] - vlat
-            dlon = s["lon"] - vlon
-            dist = (dlat * dlat + dlon * dlon) ** 0.5
+            dist = ((s["lat"] - vlat) ** 2 + (s["lon"] - vlon) ** 2) ** 0.5
             if dist < nearest_dist:
                 nearest_dist = dist
                 nearest = s
@@ -350,39 +357,71 @@ def main():
         print(f"ERROR: Could not fetch GBFS feed: {e}", file=sys.stderr)
         sys.exit(1)
 
-    feeds = gbfs["data"]["en"]["feeds"]
+    feeds = gbfs.get("data", {}).get("en", {}).get("feeds", [])
     info_url = get_feed_url(feeds, "station_information")
     status_url = get_feed_url(feeds, "station_status")
     fb_url = get_feed_url(feeds, "free_bike_status")
     vt_url = get_feed_url(feeds, "vehicle_types")
 
-    if not info_url or not status_url or not vt_url or not fb_url:
-        print("ERROR: Could not find required GBFS feeds.", file=sys.stderr)
+    if not info_url:
+        print("ERROR: station_information feed not found.", file=sys.stderr)
         sys.exit(1)
 
     print(f"Found {len(feeds)} feeds. Downloading station data...")
+
     try:
         info_data = fetch_json(info_url)
-        status_data = fetch_json(status_url)
-        fb_data = fetch_json(fb_url)
-        vt_data = fetch_json(vt_url)
     except Exception as e:
-        print(f"ERROR: Could not download data: {e}", file=sys.stderr)
+        print(f"ERROR: Could not fetch station_information: {e}", file=sys.stderr)
         sys.exit(1)
 
-    vehicle_type_map = build_vehicle_type_map(vt_data)
-    print(f"Vehicle types: {', '.join(f'{k}={v}' for k, v in vehicle_type_map.items())}")
+    # Optional feeds — continue gracefully if missing or malformed
+    status_data = {}
+    if status_url:
+        try:
+            status_data = fetch_json(status_url)
+        except Exception as e:
+            print(f"WARNING: Could not fetch station_status: {e}", file=sys.stderr)
+    else:
+        print("WARNING: station_status feed not found. Nests will show without availability data.", file=sys.stderr)
+
+    fb_data = {}
+    if fb_url:
+        try:
+            fb_data = fetch_json(fb_url)
+        except Exception as e:
+            print(f"WARNING: Could not fetch free_bike_status: {e}", file=sys.stderr)
+    else:
+        print("WARNING: free_bike_status feed not found. Skipping free-floating vehicle snap.", file=sys.stderr)
+
+    vt_data = {}
+    if vt_url:
+        try:
+            vt_data = fetch_json(vt_url)
+        except Exception as e:
+            print(f"WARNING: Could not fetch vehicle_types: {e}", file=sys.stderr)
+    else:
+        print("WARNING: vehicle_types feed not found. Vehicle type names may be raw IDs.", file=sys.stderr)
+
+    vehicle_type_map = {}
+    if vt_data:
+        try:
+            vehicle_type_map = build_vehicle_type_map(vt_data)
+            print(f"Vehicle types: {', '.join(f'{k}={v}' for k, v in vehicle_type_map.items())}")
+        except Exception as e:
+            print(f"WARNING: Could not parse vehicle_types: {e}", file=sys.stderr)
 
     stations = merge_station_data(
-        info_data["data"]["stations"],
-        status_data["data"]["stations"],
+        info_data.get("data", {}).get("stations", []),
+        status_data.get("data", {}).get("stations", []),
         vehicle_type_map,
     )
     print(f"Merged {len(stations)} stations from station_status.")
 
-    free_vehicles = fb_data["data"]["bikes"]
-    matched = snap_vehicles_to_stations(stations, free_vehicles, vehicle_type_map)
-    print(f"Snapped {matched} free-floating vehicles to nearest nests (total free: {len(free_vehicles)}).")
+    if fb_data and vehicle_type_map:
+        free_vehicles = fb_data.get("data", {}).get("bikes", [])
+        matched = snap_vehicles_to_stations(stations, free_vehicles, vehicle_type_map)
+        print(f"Snapped {matched} free-floating vehicles to nearest nests (total free: {len(free_vehicles)}).")
 
     before = len(stations)
     stations = merge_duplicate_stations(stations)
@@ -393,8 +432,15 @@ def main():
     generated_at = datetime.datetime.now(datetime.timezone.utc).astimezone(ZoneInfo("America/Halifax")).strftime("%B %d, %Y at %I:%M %p %Z")
     html = generate_html(geojson, generated_at)
 
-    with open(args.output, "w", encoding="utf-8") as f:
+    # Atomic write so a crash mid-write never leaves a corrupt or empty output file
+    output_path = os.path.abspath(args.output)
+    output_dir = os.path.dirname(output_path)
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=output_dir, suffix=".tmp", delete=False
+    ) as f:
         f.write(html)
+        tmp_path = f.name
+    os.replace(tmp_path, output_path)
     print(f"Wrote map to {args.output}")
 
 
