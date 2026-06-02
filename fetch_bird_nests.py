@@ -167,6 +167,16 @@ def stations_to_geojson(stations: list) -> dict:
         if "station_area" in s:
             feature["properties"]["station_area"] = s["station_area"]
         features.append(feature)
+
+    # Mark the single station with the most vehicles (first in case of ties)
+    if features:
+        max_count = max(f["properties"]["num_bikes_available"] for f in features)
+        if max_count > 0:
+            for f in features:
+                if f["properties"]["num_bikes_available"] == max_count:
+                    f["properties"]["is_top_station"] = True
+                    break
+
     return {
         "type": "FeatureCollection",
         "features": features,
@@ -319,6 +329,32 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     map.on('mouseenter', 'nests', function () {{ map.getCanvas().style.cursor = 'pointer'; }});
     map.on('mouseleave', 'nests', function () {{ map.getCanvas().style.cursor = ''; }});
+
+    // Add star marker for the station with the most vehicles
+    var topFeature = geojsonData.features.find(function (f) {{
+      return f.properties.is_top_station;
+    }});
+    if (topFeature) {{
+      var starEl = document.createElement('div');
+      starEl.innerHTML = '⭐';
+      starEl.style.fontSize = '14px';
+      starEl.style.lineHeight = '1';
+      starEl.style.textAlign = 'center';
+      starEl.style.width = '20px';
+      starEl.style.height = '20px';
+      starEl.style.display = 'flex';
+      starEl.style.alignItems = 'center';
+      starEl.style.justifyContent = 'center';
+      var starMarker = new maplibregl.Marker({{ element: starEl }})
+        .setLngLat(topFeature.geometry.coordinates)
+        .addTo(map);
+      function updateStarVisibility() {{
+        var zoom = map.getZoom();
+        starMarker.getElement().style.display = (zoom > 14.5) ? 'flex' : 'none';
+      }}
+      updateStarVisibility();
+      map.on('zoom', updateStarVisibility);
+    }}
 
     var bounds = new maplibregl.LngLatBounds();
     geojsonData.features.forEach(function (f) {{
