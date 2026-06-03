@@ -356,6 +356,35 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       map.on('zoom', updateStarVisibility);
     }}
 
+    // Goose easter egg at Sullivan's Pond
+    var gooseEl = document.createElement('div');
+    gooseEl.innerHTML = '🪿';
+    gooseEl.style.fontSize = '18px';
+    gooseEl.style.lineHeight = '1';
+    gooseEl.style.textAlign = 'center';
+    gooseEl.style.width = '20px';
+    gooseEl.style.height = '20px';
+    gooseEl.style.display = 'flex';
+    gooseEl.style.alignItems = 'center';
+    gooseEl.style.justifyContent = 'center';
+    gooseEl.style.cursor = 'pointer';
+    var gooseMarker = new maplibregl.Marker({{ element: gooseEl }})
+      .setLngLat([-63.56326113429952, 44.6721396812563])
+      .addTo(map);
+    gooseEl.addEventListener('click', function(e) {{
+      e.stopPropagation();
+      new maplibregl.Popup()
+        .setLngLat([-63.56326113429952, 44.6721396812563])
+        .setHTML('<strong>Sullivan\\'s Pond, Dartmouth, NS</strong><br/>13 geese available (honk!)')
+        .addTo(map);
+    }});
+    function updateGooseVisibility() {{
+      var zoom = map.getZoom();
+      gooseMarker.getElement().style.display = (zoom > 14.5) ? 'flex' : 'none';
+    }}
+    updateGooseVisibility();
+    map.on('zoom', updateGooseVisibility);
+
     var bounds = new maplibregl.LngLatBounds();
     geojsonData.features.forEach(function (f) {{
       bounds.extend(f.geometry.coordinates);
