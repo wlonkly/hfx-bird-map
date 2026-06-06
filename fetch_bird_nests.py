@@ -354,6 +354,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }}
       updateStarVisibility();
       map.on('zoom', updateStarVisibility);
+      document.addEventListener('keydown', function(e) {{
+        if (e.key === '*') {{
+          map.flyTo({{ center: topFeature.geometry.coordinates, zoom: 15.5 }});
+        }}
+      }});
     }}
 
     // Goose easter egg at Sullivan's Pond
