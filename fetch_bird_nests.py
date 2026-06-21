@@ -260,6 +260,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .legend h4 {{ margin: 0 0 6px; }}
   .legend-item {{ display: flex; align-items: center; margin-bottom: 4px; }}
   .dot {{ width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; border: 1px solid #fff; }}
+  .user-dot {{
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #000; border: 2px solid #fff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.4);
+  }}
+  .locate-btn svg {{ width: 16px; height: 16px; display: block; }}
+  .locate-btn:disabled {{ opacity: 0.5; cursor: default; }}
 </style>
 </head>
 <body>
