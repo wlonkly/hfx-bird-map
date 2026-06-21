@@ -294,6 +294,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     zoom: 12
   }});
 
+  map.addControl(new maplibregl.NavigationControl({{ showCompass: false }}), 'top-right');
+
   map.on('load', function () {{
     map.addSource('nests', {{ type: 'geojson', data: geojsonData }});
 
