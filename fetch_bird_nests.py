@@ -260,6 +260,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .legend h4 {{ margin: 0 0 6px; }}
   .legend-item {{ display: flex; align-items: center; margin-bottom: 4px; }}
   .dot {{ width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; border: 1px solid #fff; }}
+  .user-dot {{
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #000; border: 2px solid #fff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.4);
+  }}
+  .locate-btn svg {{ width: 16px; height: 16px; display: block; }}
+  .locate-btn:disabled {{ opacity: 0.5; cursor: default; }}
 </style>
 </head>
 <body>
@@ -286,6 +293,66 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     center: [-63.58, 44.65],
     zoom: 12
   }});
+
+  map.addControl(new maplibregl.NavigationControl({{ showCompass: false }}), 'top-right');
+
+  class LocateControl {{
+    onAdd(map) {{
+      this._map = map;
+      this._container = document.createElement('div');
+      this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+      this._btn = document.createElement('button');
+      this._btn.type = 'button';
+      this._btn.className = 'maplibregl-ctrl-icon locate-btn';
+      this._btn.setAttribute('aria-label', 'Zoom to my location');
+      this._btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>';
+      this._btn.addEventListener('click', () => this._onClick());
+      this._container.appendChild(this._btn);
+      return this._container;
+    }}
+    onRemove() {{
+      this._container.parentNode.removeChild(this._container);
+      if (this._marker) this._marker.remove();
+      this._marker = undefined;
+      this._map = undefined;
+    }}
+    requestOnLoad() {{ this._request(false); }}
+    _onClick() {{
+      if (this._coords) {{
+        this._map.flyTo({{ center: this._coords, zoom: 15, essential: true }});
+        return;
+      }}
+      this._request(true);
+    }}
+    _request(fly) {{
+      if (!navigator.geolocation) return;
+      this._btn.disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {{
+          this._coords = [pos.coords.longitude, pos.coords.latitude];
+          this._addDot();
+          if (fly) this._map.flyTo({{ center: this._coords, zoom: 15, essential: true }});
+          this._btn.disabled = false;
+        }},
+        () => {{ this._btn.disabled = false; }},
+        {{ enableHighAccuracy: true, timeout: 10000 }}
+      );
+    }}
+    _addDot() {{
+      if (this._marker) return;
+      var el = document.createElement('div');
+      el.className = 'user-dot';
+      this._marker = new maplibregl.Marker({{ element: el }})
+        .setLngLat(this._coords)
+        .addTo(this._map);
+    }}
+  }}
+
+  var locCtrl = new LocateControl();
+  if (navigator.geolocation) {{
+    map.addControl(locCtrl, 'top-right');
+    locCtrl.requestOnLoad();
+  }}
 
   map.on('load', function () {{
     map.addSource('nests', {{ type: 'geojson', data: geojsonData }});
