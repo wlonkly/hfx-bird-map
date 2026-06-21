@@ -354,7 +354,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   var locCtrl = new LocateControl();
   if (navigator.geolocation) {{
     map.addControl(locCtrl, 'top-right');
-    locCtrl.requestOnLoad();
   }}
 
   map.on('load', function () {{
