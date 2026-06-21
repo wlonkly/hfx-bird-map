@@ -312,6 +312,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }}
     onRemove() {{
       this._container.parentNode.removeChild(this._container);
+      if (this._marker) this._marker.remove();
+      this._marker = undefined;
       this._map = undefined;
     }}
     requestOnLoad() {{ this._request(false); }}
