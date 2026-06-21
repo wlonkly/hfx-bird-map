@@ -265,7 +265,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     background: #000; border: 2px solid #fff;
     box-shadow: 0 0 4px rgba(0,0,0,0.4);
   }}
-  .locate-btn svg {{ width: 16px; height: 16px; display: block; }}
+  .locate-btn {{
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23333' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E");
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+  }}
   .locate-btn:disabled {{ opacity: 0.5; cursor: default; }}
 </style>
 </head>
@@ -305,7 +309,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       this._btn.type = 'button';
       this._btn.className = 'maplibregl-ctrl-icon locate-btn';
       this._btn.setAttribute('aria-label', 'Zoom to my location');
-      this._btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>';
       this._btn.addEventListener('click', () => this._onClick());
       this._container.appendChild(this._btn);
       return this._container;
