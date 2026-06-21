@@ -349,8 +349,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   }}
 
   var locCtrl = new LocateControl();
-  map.addControl(locCtrl, 'top-right');
-  locCtrl.requestOnLoad();
+  if (navigator.geolocation) {{
+    map.addControl(locCtrl, 'top-right');
+    locCtrl.requestOnLoad();
+  }}
 
   map.on('load', function () {{
     map.addSource('nests', {{ type: 'geojson', data: geojsonData }});
