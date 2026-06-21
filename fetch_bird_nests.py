@@ -580,6 +580,7 @@ def main():
     ) as f:
         f.write(html)
         tmp_path = f.name
+    os.chmod(tmp_path, 0o644)
     os.replace(tmp_path, output_path)
     print(f"Wrote map to {args.output}")
 
