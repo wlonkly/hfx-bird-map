@@ -378,3 +378,17 @@ class TestGenerateHtml:
         assert "Not affiliated with Bird Canada" in html
         assert "github.com/wlonkly/hfx-bird-map" in html
         assert TS in html
+
+    def test_contains_collapse_controls(self):
+        html = generate_html({"type": "FeatureCollection", "features": []}, TS)
+        # Collapsed-state badge (click to expand)
+        assert "bird-badge" in html
+        assert 'aria-label="Show title"' in html
+        # Collapse button in the header (click to collapse)
+        assert "collapse-btn" in html
+        assert 'aria-label="Collapse title"' in html
+        # Toggle JS
+        assert "classList.add('collapsed')" in html
+        assert "classList.remove('collapsed')" in html
+        # Collapsed-state CSS rule that reveals the badge
+        assert ".title-box.collapsed .bird-badge" in html
