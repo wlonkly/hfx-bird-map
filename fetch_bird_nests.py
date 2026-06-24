@@ -252,6 +252,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .title-box p {{ margin: 0; }}
   .title-box .updated {{ color: #666; font-size: 11px; margin-top: 4px; }}
   .title-box .disclaimer {{ color: #888; font-size: 11px; margin-top: 6px; }}
+  .bird-badge {{
+    display: none; cursor: pointer;
+    font-size: 20px; line-height: 1;
+  }}
+  .collapse-btn {{
+    float: right; margin-left: 8px;
+    padding: 0; border: none; background: transparent;
+    cursor: pointer; font-size: 14px; line-height: 1; color: #666;
+  }}
+  .title-box.collapsed {{ padding: 6px 8px; }}
+  .title-box.collapsed h1,
+  .title-box.collapsed p,
+  .title-box.collapsed .updated,
+  .title-box.collapsed .disclaimer,
+  .title-box.collapsed .collapse-btn {{ display: none; }}
+  .title-box.collapsed .bird-badge {{ display: inline; }}
   .legend {{
     position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9);
     padding: 10px; border-radius: 6px; font-family: sans-serif; font-size: 12px;
@@ -275,8 +291,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <div id="map"></div>
-<div class="title-box">
-  <h1>Halifax Bird Map 🐦</h1>
+<div class="title-box" id="titleBox">
+  <span class="bird-badge" role="button" tabindex="0" aria-label="Show title">🐦</span>
+  <h1>Halifax Bird Map 🐦 <button class="collapse-btn" type="button" aria-label="Collapse title">▾</button></h1>
   <p>Nests show available vehicles at this parking zone. Empty nests are valid parking — they just have no vehicles right now.</p>
   <p class="updated">Last updated: {generated_at}</p>
   <p class="disclaimer">Not affiliated with Bird Canada. <a href="https://github.com/wlonkly/hfx-bird-map">Source</a></p>
@@ -464,6 +481,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       bounds.extend(f.geometry.coordinates);
     }});
     map.fitBounds(bounds, {{ padding: 60, maxZoom: 16 }});
+  }});
+
+  var titleBox = document.getElementById('titleBox');
+  var collapseBtn = titleBox.querySelector('.collapse-btn');
+  var birdBadge = titleBox.querySelector('.bird-badge');
+  function collapseTitle() {{ titleBox.classList.add('collapsed'); }}
+  function expandTitle() {{ titleBox.classList.remove('collapsed'); }}
+  collapseBtn.addEventListener('click', collapseTitle);
+  birdBadge.addEventListener('click', expandTitle);
+  birdBadge.addEventListener('keydown', function (e) {{
+    if (e.key === 'Enter' || e.key === ' ') {{ e.preventDefault(); expandTitle(); }}
   }});
 </script>
 </body>
