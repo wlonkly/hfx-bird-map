@@ -293,7 +293,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <div id="map"></div>
 <div class="title-box" id="titleBox">
   <span class="bird-badge" role="button" tabindex="0" aria-label="Show title">🐦</span>
-  <h1>Halifax Bird Map 🐦 <button class="collapse-btn" type="button" aria-label="Collapse title">▾</button></h1>
+  <h1>Halifax Bird Map 🐦 <button class="collapse-btn" type="button" aria-label="Collapse title">↖</button></h1>
   <p>Nests show available vehicles at this parking zone. Empty nests are valid parking — they just have no vehicles right now.</p>
   <p class="updated">Last updated: {generated_at}</p>
   <p class="disclaimer">Not affiliated with Bird Canada. <a href="https://github.com/wlonkly/hfx-bird-map">Source</a></p>
